@@ -743,7 +743,7 @@ class VersionPrinter(argparse.Action):
             help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        print("@VERSION@")
+        print("")
         sys.exit(0)
 
 
@@ -1065,7 +1065,7 @@ def do_scan(props, output):
         props.rpm_opts += RAWBUILD_RPM_OPTS
 
     try:
-        with ScanResults(output, "csmock", "@VERSION@", props.keep_going) as results:
+        with ScanResults(output, "csmock", "", props.keep_going) as results:
             enabled_plugins = props.plugins.enabled_plugins()
             results.ini_writer.append("enabled-plugins", ", ".join(enabled_plugins))
             results.ini_writer.append("mock-config", props.mock_profile)
@@ -1344,7 +1344,7 @@ cd %%s*/ || cd *\n\
 
 def do_diff_scan(props, output, diff_patches):
     try:
-        with ScanResults(output, "csmock", "@VERSION@", props.keep_going, create_dbgdir=False) as results:
+        with ScanResults(output, "csmock", "", props.keep_going, create_dbgdir=False) as results:
             run0_props = copy.deepcopy(props)
             csdiff = "csdiff"
             if diff_patches:
