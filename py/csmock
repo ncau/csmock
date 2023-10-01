@@ -882,6 +882,16 @@ key event (defaults to 3).")
         help='override the build root directory for mock (disables yum and root cache)'
     )
 
+    parser.add_argument(
+        "--limit-msg-len", type=int, default=512,
+        help="limit message length by a number provided"
+    )
+
+    parser.add_argument(
+        "--warning-rate-limit", type=int, default=1024,
+        help="warn when message length exceeds by a number provided"
+    )
+
     # --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -972,6 +982,8 @@ key event (defaults to 3).")
     props.skip_build            = args.skip_build
     props.use_ldpwrap           = args.use_ldpwrap
     props.skip_mock_clean       = args.no_clean
+    props.limit_msg_len         = args.limit_msg_len
+    props.warning_rate_limit    = args.warning_rate_limit 
 
     if props.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
@@ -1281,7 +1293,8 @@ cd %%s*/ || cd *\n\
                                 mock.get_mock_cmd(
                                     ["--shell", "tar -c --remove-files " + strlist_to_shell_cmd(
                                         props.copy_out_files)]))
-
+                            if props.limit_msg_len > 0:
+                                cmd += " | head -n -{props.limit_msg_len} '{results.dbgdir_raw}' > temp && mv temp {results.dbgdir_raw}"
                             cmd += " | tar -xC '%s'" % results.dbgdir_raw
                             if results.exec_cmd(cmd, shell=True) != 0:
                                 results.error("failed to get intermediate results from mock")
