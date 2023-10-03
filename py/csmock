@@ -86,6 +86,13 @@ DEFAULT_RESULT_FILTERS = [
     "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\\.c$'",
     "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
 
+# options for csgrep
+TEST_CSWRAP_FILTERS = [
+    "csgrep --mode=json --path '^/builddir/build/BUILD/' \
+--strip-path-prefix /builddir/build/BUILD/ --limit-msg-len 2",
+    "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\\.c$'",
+    "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
+
 # path filter needed with `rpmbuild -bi`
 # TODO: introduce a csgrep option for this
 RPM_BI_FILTER = "sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"
@@ -423,6 +430,7 @@ class ScanProps:
         self.cswrap_enabled = False
         self.cswrap_filters = DEFAULT_CSWRAP_FILTERS
         self.result_filters = DEFAULT_RESULT_FILTERS
+        self.test_filters = TEST_CSWRAP_FILTERS
         self.build_cmd_wrappers = []
         self.post_build_chroot_cmds = []
         self.post_process_hooks = []
@@ -1273,6 +1281,8 @@ cd %%s*/ || cd *\n\
                         ec = mock.exec_rpmbuild_bi(props, extra_rpm_opts=extra_rpm_opts)
                         if ec != 0:
                             results.error("%install failed", ec=ec)
+                        if props.limit_msg_len > 0:
+                            props.result_filters = props.test_filters
                         props.result_filters = [RPM_BI_FILTER] + props.result_filters
 
                     try:
@@ -1293,8 +1303,6 @@ cd %%s*/ || cd *\n\
                                 mock.get_mock_cmd(
                                     ["--shell", "tar -c --remove-files " + strlist_to_shell_cmd(
                                         props.copy_out_files)]))
-                            if props.limit_msg_len > 0:
-                                cmd += " | head -n -{props.limit_msg_len} '{results.dbgdir_raw}' > temp && mv temp {results.dbgdir_raw}"
                             cmd += " | tar -xC '%s'" % results.dbgdir_raw
                             if results.exec_cmd(cmd, shell=True) != 0:
                                 results.error("failed to get intermediate results from mock")
